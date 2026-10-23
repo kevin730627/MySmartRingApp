@@ -1,0 +1,9 @@
+# 側錄檔與原廠 APK 含個人健康資料與版權內容，不進版控
+captures/
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
