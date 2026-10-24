@@ -9,7 +9,7 @@
 
 ## 環境
 
-- Pixel 7，Android 17。Kotlin、Jetpack Compose。
+- Pixel 7，Android 17，minSdk 31。Kotlin、Jetpack Compose。
 - 兩個 Gradle 模組：`ring-protocol`（純 Kotlin，協定解析，JVM 單元測試）與 `app`。
 - ViewModel 加 Flow 加 Room。手動注入，不用 Hilt。
 - 圖表：折線與統計用 Vico；睡眠階段圖用 Canvas 自繪（見下）。

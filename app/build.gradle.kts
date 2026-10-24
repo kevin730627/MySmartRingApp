@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mysmartring"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "0.1"
@@ -42,6 +42,7 @@ ksp {
 
 dependencies {
     implementation(project(":ring-protocol"))
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     implementation("androidx.room:room-runtime:2.8.4")
     implementation("androidx.room:room-ktx:2.8.4")

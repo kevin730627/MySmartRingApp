@@ -7,8 +7,11 @@
         android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+
     <!-- 關閉自動備份，資料不離開使用者的控制 -->
     <application
+        android:name=".RingApp"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:label="MySmartRing" />
