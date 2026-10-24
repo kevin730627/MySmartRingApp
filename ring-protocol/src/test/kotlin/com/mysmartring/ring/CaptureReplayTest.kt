@@ -97,6 +97,25 @@ class CaptureReplayTest {
     }
 
     @Test
+    fun `SyncDecoder 從原始訊框還原出全部資料且沒有錯誤`() {
+        val raw = lines.filter { it.first == "RX" }.map { it.second }
+        val decoded = SyncDecoder.decode(raw, zone)
+        assertEquals(emptyList(), decoded.errors)
+        assertEquals(1, decoded.sleepSessions.size)
+        assertTrue(decoded.readings.any { it.metric == Metric.HEART_RATE })
+        assertTrue(decoded.readings.any { it.metric == Metric.BLOOD_OXYGEN })
+    }
+
+    @Test
+    fun `壞訊框只影響自己，其餘資料照常解析`() {
+        val raw = lines.filter { it.first == "RX" }.map { it.second }.toMutableList()
+        raw[raw.indexOfFirst { Frame.decode(it).command == Commands.DATA_SLEEP }] = byteArrayOf(1, 2, 3)
+        val decoded = SyncDecoder.decode(raw, zone)
+        assertTrue(decoded.errors.isNotEmpty())
+        assertTrue(decoded.readings.isNotEmpty())
+    }
+
+    @Test
     fun `戒指時間以時區換算為 UTC 瞬間`() {
         val seconds = 0x326E1DF7L // 2026-10-23 13:30:31 戒指本地時間
         assertEquals(LocalDateTime.of(2026, 10, 23, 5, 30, 31).toInstant(ZoneOffset.UTC), RingTime.toInstant(seconds, zone))

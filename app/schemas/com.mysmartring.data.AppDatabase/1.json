@@ -1,0 +1,436 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "7586d0e9c9ccf3c250b5869db3c0e26b",
+    "entities": [
+      {
+        "tableName": "sync",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startedAtMillis` INTEGER NOT NULL, `zoneId` TEXT NOT NULL, `finishedAtMillis` INTEGER, `status` TEXT NOT NULL, `errors` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAtMillis",
+            "columnName": "startedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zoneId",
+            "columnName": "zoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishedAtMillis",
+            "columnName": "finishedAtMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errors",
+            "columnName": "errors",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "raw_frame",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `syncId` INTEGER NOT NULL, `receivedAtMillis` INTEGER NOT NULL, `command` INTEGER NOT NULL, `bytes` BLOB NOT NULL, FOREIGN KEY(`syncId`) REFERENCES `sync`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAtMillis",
+            "columnName": "receivedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "command",
+            "columnName": "command",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bytes",
+            "columnName": "bytes",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_raw_frame_syncId",
+            "unique": false,
+            "columnNames": [
+              "syncId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_raw_frame_syncId` ON `${TABLE_NAME}` (`syncId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sync",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "syncId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "reading",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `metric` TEXT NOT NULL, `measuredAtMillis` INTEGER NOT NULL, `value` INTEGER NOT NULL, `syncId` INTEGER NOT NULL, FOREIGN KEY(`syncId`) REFERENCES `sync`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metric",
+            "columnName": "metric",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "measuredAtMillis",
+            "columnName": "measuredAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reading_metric_measuredAtMillis",
+            "unique": true,
+            "columnNames": [
+              "metric",
+              "measuredAtMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_reading_metric_measuredAtMillis` ON `${TABLE_NAME}` (`metric`, `measuredAtMillis`)"
+          },
+          {
+            "name": "index_reading_syncId",
+            "unique": false,
+            "columnNames": [
+              "syncId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reading_syncId` ON `${TABLE_NAME}` (`syncId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sync",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "syncId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sleep_session",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startAtMillis` INTEGER NOT NULL, `endAtMillis` INTEGER NOT NULL, `wakeDate` TEXT NOT NULL, `summary` BLOB NOT NULL, `syncId` INTEGER NOT NULL, FOREIGN KEY(`syncId`) REFERENCES `sync`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startAtMillis",
+            "columnName": "startAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endAtMillis",
+            "columnName": "endAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakeDate",
+            "columnName": "wakeDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summary",
+            "columnName": "summary",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sleep_session_startAtMillis",
+            "unique": true,
+            "columnNames": [
+              "startAtMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sleep_session_startAtMillis` ON `${TABLE_NAME}` (`startAtMillis`)"
+          },
+          {
+            "name": "index_sleep_session_syncId",
+            "unique": false,
+            "columnNames": [
+              "syncId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sleep_session_syncId` ON `${TABLE_NAME}` (`syncId`)"
+          },
+          {
+            "name": "index_sleep_session_wakeDate",
+            "unique": false,
+            "columnNames": [
+              "wakeDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sleep_session_wakeDate` ON `${TABLE_NAME}` (`wakeDate`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sync",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "syncId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sleep_segment",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sessionId` INTEGER NOT NULL, `stage` TEXT NOT NULL, `startAtMillis` INTEGER NOT NULL, `durationSeconds` INTEGER NOT NULL, FOREIGN KEY(`sessionId`) REFERENCES `sleep_session`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stage",
+            "columnName": "stage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startAtMillis",
+            "columnName": "startAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sleep_segment_sessionId",
+            "unique": false,
+            "columnNames": [
+              "sessionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sleep_segment_sessionId` ON `${TABLE_NAME}` (`sessionId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sleep_session",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "sessionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "paired_ring",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `macAddress` TEXT NOT NULL, `name` TEXT NOT NULL, `pairedAtMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "macAddress",
+            "columnName": "macAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pairedAtMillis",
+            "columnName": "pairedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "dashboard_card",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `metric` TEXT NOT NULL, `cardType` TEXT NOT NULL, `range` TEXT NOT NULL, `position` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metric",
+            "columnName": "metric",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardType",
+            "columnName": "cardType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "range",
+            "columnName": "range",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7586d0e9c9ccf3c250b5869db3c0e26b')"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 掃描時宣告不用來推導位置，所以不需要定位權限 -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- 關閉自動備份，資料不離開使用者的控制 -->
+    <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:label="MySmartRing" />
+</manifest>

@@ -26,7 +26,9 @@
 
 ## 資料表
 
-`raw_frame`、`reading`、`sleep_session`、`sleep_segment`、`sync`、`dashboard_card`、`paired_ring`。欄位見討論紀錄，實作時以 Room 定義為準。
+`raw_frame`、`reading`、`sleep_session`、`sleep_segment`、`sync`、`dashboard_card`、`paired_ring`。欄位以 Room 定義為準（`app/src/main/kotlin/com/mysmartring/data/Entities.kt`）。
+
+與最初討論的差異：Reading 與 Sleep Session 記錄的是來源 `sync_id`，不是 `raw_frame_id`。同一型別的多個封包是同一條位元組串流（可能切在欄位中間），一筆 Reading 無法對應到單一個 Raw Frame。`sync` 另外記錄當時的時區，Rebuild 需要它換算戒指時間。
 
 ## 畫面（四個）
 
