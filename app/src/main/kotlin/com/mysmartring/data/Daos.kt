@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SyncDao {
@@ -38,6 +39,12 @@ interface ReadingDao {
 
     @Query("SELECT * FROM reading WHERE metric = :metric AND measuredAtMillis >= :from AND measuredAtMillis < :to ORDER BY measuredAtMillis")
     suspend fun between(metric: String, from: Long, to: Long): List<ReadingEntity>
+
+    @Query("SELECT * FROM reading WHERE metric = :metric ORDER BY measuredAtMillis DESC LIMIT 1")
+    fun latest(metric: String): Flow<ReadingEntity?>
+
+    @Query("SELECT * FROM reading WHERE metric = :metric AND measuredAtMillis >= :from AND measuredAtMillis < :to ORDER BY measuredAtMillis")
+    fun observeBetween(metric: String, from: Long, to: Long): Flow<List<ReadingEntity>>
 
     @Query("SELECT COUNT(*) FROM reading")
     suspend fun count(): Int

@@ -14,5 +14,15 @@
         android:name=".RingApp"
         android:allowBackup="false"
         android:fullBackupContent="false"
-        android:label="MySmartRing" />
+        android:label="MySmartRing"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>
