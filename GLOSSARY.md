@@ -25,6 +25,9 @@ _避免使用_：device、wearable
 **Sleep Session（睡眠區間）**
 從入睡到醒來的一段連續睡眠，內含深睡、淺睡、清醒等階段的時間片段。歸屬於「醒來那天」。是與 Reading 並列的獨立概念。
 
+**Sleep Stage（睡眠階段）**
+Sleep Session 內的一個時間片段所處的狀態：深睡、淺睡、REM。戒指不回報清醒階段。
+
 **Raw Frame（原始封包）**
 戒指在 Sync 時傳來的原始位元組。與解析後的 Reading、Sleep Session 一併保存，使解析錯誤能事後修正。
 
