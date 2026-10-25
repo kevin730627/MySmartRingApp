@@ -23,10 +23,16 @@ _避免使用_：device、wearable
 某個 Metric 在某個時間點的一筆數值。睡眠不是 Reading，而是 Sleep Session。
 
 **Sleep Session（睡眠區間）**
-從入睡到醒來的一段連續睡眠，內含深睡、淺睡、清醒等階段的時間片段。歸屬於「醒來那天」。是與 Reading 並列的獨立概念。
+從入睡到醒來的一段連續睡眠，內含深睡、淺睡、REM 的時間片段。歸屬於「醒來那天」。是與 Reading 並列的獨立概念。戒指可能把一晚切成多段 Sleep Session，各段分開保存，不合併。
 
 **Sleep Stage（睡眠階段）**
 Sleep Session 內的一個時間片段所處的狀態：深睡、淺睡、REM。戒指不回報清醒階段。
+
+**Sleep Night（一晚睡眠）**
+醒來在同一天的所有 Sleep Session，依入睡時間排列。只是顯示與統計上的分組，不是資料庫裡合併後的紀錄。
+
+**Awake Gap（清醒時段）**
+同一個 Sleep Night 中，相鄰兩段 Sleep Session 之間的空檔。戒指本身不回報清醒，所以清醒時段只出現在分段處，不屬於任何 Sleep Stage，也不計入睡眠時間。
 
 **Raw Frame（原始封包）**
 戒指在 Sync 時傳來的原始位元組。與解析後的 Reading、Sleep Session 一併保存，使解析錯誤能事後修正。
@@ -49,4 +55,4 @@ Sleep Session 內的一個時間片段所處的狀態：深睡、淺睡、REM。
 儀表板上顯示單一 Metric 的區塊。使用者可選擇顯示哪些、調整順序、選擇時間範圍。
 
 **Export（匯出）**
-把資料庫中的 Reading 輸出成 CSV 或 JSON，供電腦端分析。
+把資料庫中的 Reading 與 Sleep Session 輸出成 CSV 或 JSON，供電腦端分析。不含 Raw Frame。
