@@ -1,6 +1,7 @@
 package com.mysmartring.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,9 +39,9 @@ private enum class Lane(val label: String, val stage: String?, val color: Color)
 private val CLOCK = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
 
 @Composable
-fun SleepCard(viewModel: DashboardViewModel) {
+fun SleepCard(viewModel: DashboardViewModel, onClick: () -> Unit) {
     val night by remember { viewModel.latestNight() }.collectAsStateWithLifecycle(null)
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("睡眠", style = MaterialTheme.typography.titleMedium)
             val n = night
@@ -55,7 +56,7 @@ fun SleepCard(viewModel: DashboardViewModel) {
 }
 
 @Composable
-private fun Summary(night: SleepNight) {
+internal fun Summary(night: SleepNight) {
     val date = LocalDate.parse(night.wakeDate)
     Text("${date.monthValue}/${date.dayOfMonth} 醒來・共 ${night.sessions.size} 段", style = MaterialTheme.typography.bodySmall)
     Text(duration(night.sleepSeconds), style = MaterialTheme.typography.displaySmall)
@@ -76,7 +77,7 @@ private fun Stat(label: String, value: String, color: Color) {
 }
 
 @Composable
-private fun Hypnogram(night: SleepNight) {
+internal fun Hypnogram(night: SleepNight) {
     val lineColor = MaterialTheme.colorScheme.outline
     val totalMillis = (night.endAtMillis - night.startAtMillis).coerceAtLeast(1)
     Canvas(Modifier.fillMaxWidth().height(160.dp)) {

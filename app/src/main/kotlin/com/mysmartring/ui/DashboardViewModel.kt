@@ -62,6 +62,30 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** 今天起往前共 [days] 天（含今天）的起點 */
+    fun rangeStart(days: Int): Long {
+        val zone = ZoneId.systemDefault()
+        return LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant().toEpochMilli()
+    }
+
+    /** 今天起往前共 [days] 天（含今天）的 Reading，資料庫有變動就會重新送出 */
+    fun lastDays(metric: Metric, days: Int): Flow<List<ReadingEntity>> {
+        val zone = ZoneId.systemDefault()
+        val end = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        return readings.observeBetween(metric.name, rangeStart(days), end)
+    }
+
+    /** 所有睡眠，依醒來日由新到舊，每天一個 [SleepNight]（同日各段不合併） */
+    fun nights(): Flow<List<SleepNight>> {
+        val sleep = container.database.sleepDao()
+        return combine(sleep.observeAllSessions(), sleep.observeAllSegments()) { sessions, segments ->
+            val bySession = segments.groupBy { it.sessionId }
+            sessions.groupBy { it.wakeDate }
+                .mapNotNull { (date, list) -> SleepNight.of(date, list.map { SessionWithSegments(it, bySession[it.id].orEmpty()) }) }
+                .sortedByDescending { it.wakeDate }
+        }
+    }
+
     /** 今天（手機時區）的 Reading，資料庫有變動就會重新送出 */
     fun today(metric: Metric): Flow<List<ReadingEntity>> {
         val zone = ZoneId.systemDefault()

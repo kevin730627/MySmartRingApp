@@ -3,6 +3,7 @@ package com.mysmartring.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -34,16 +36,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mysmartring.data.ReadingEntity
 import com.mysmartring.ring.Metric
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -60,7 +52,7 @@ private val METRICS = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Unit, onOpenSettings: () -> Unit) {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(PERMISSIONS.all { ContextCompat.checkSelfPermission(context, it) == android.content.pm.PackageManager.PERMISSION_GRANTED }) }
     val requestPermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -71,7 +63,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
     // 開啟 app 且有權限時自動同步一次
     LaunchedEffect(granted) { if (granted) viewModel.sync() }
 
-    Scaffold(topBar = { CenterAlignedTopAppBar(title = { Text("MySmartRing") }) }) { padding ->
+    Scaffold(topBar = { CenterAlignedTopAppBar(title = { Text("MySmartRing") }, actions = { TextButton(onClick = onOpenSettings) { Text("設定") } }) }) { padding ->
         PullToRefreshBox(
             isRefreshing = syncState is SyncUiState.Working,
             onRefresh = { if (granted) viewModel.sync() },
@@ -84,10 +76,10 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
             ) {
                 item { StatusCard(granted, syncState, onGrant = { requestPermissions.launch(PERMISSIONS) }, onPair = viewModel::pair) }
                 items(METRICS) { spec ->
-                    LatestCard(viewModel, spec)
-                    TrendCard(viewModel, spec)
+                    LatestCard(viewModel, spec, onClick = { onOpenDetail(spec.metric.name) })
+                    TrendCard(viewModel, spec, onClick = { onOpenDetail(spec.metric.name) })
                 }
-                item { SleepCard(viewModel) }
+                item { SleepCard(viewModel, onClick = { onOpenDetail("SLEEP") }) }
             }
         }
     }
@@ -119,9 +111,9 @@ private fun StatusCard(granted: Boolean, state: SyncUiState, onGrant: () -> Unit
 }
 
 @Composable
-private fun LatestCard(viewModel: DashboardViewModel, spec: MetricSpec) {
+private fun LatestCard(viewModel: DashboardViewModel, spec: MetricSpec, onClick: () -> Unit) {
     val latest by remember(spec) { viewModel.latest(spec.metric) }.collectAsStateWithLifecycle(null)
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp)) {
             Text(spec.label, style = MaterialTheme.typography.titleMedium)
             val reading = latest
@@ -142,15 +134,15 @@ private fun LatestCard(viewModel: DashboardViewModel, spec: MetricSpec) {
 }
 
 @Composable
-private fun TrendCard(viewModel: DashboardViewModel, spec: MetricSpec) {
+private fun TrendCard(viewModel: DashboardViewModel, spec: MetricSpec, onClick: () -> Unit) {
     val readings by remember(spec) { viewModel.today(spec.metric) }.collectAsStateWithLifecycle(emptyList())
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${spec.label}・今日趨勢", style = MaterialTheme.typography.titleMedium)
             if (readings.isEmpty()) {
                 Text("今天還沒有資料", style = MaterialTheme.typography.bodyMedium)
             } else {
-                TrendChart(readings)
+                TrendChart(readings, viewModel.rangeStart(1), 1)
                 val values = readings.map { it.value }
                 Text(
                     "平均 ${values.average().toInt()}　最高 ${values.max()}　最低 ${values.min()}",
@@ -159,31 +151,6 @@ private fun TrendCard(viewModel: DashboardViewModel, spec: MetricSpec) {
             }
         }
     }
-}
-
-@Composable
-private fun TrendChart(readings: List<ReadingEntity>) {
-    val producer = remember { CartesianChartModelProducer() }
-    LaunchedEffect(readings) {
-        val zone = ZoneId.systemDefault()
-        // 橫軸為當天的小時數（含小數）
-        val xs = readings.map {
-            val t = Instant.ofEpochMilli(it.measuredAtMillis).atZone(zone)
-            t.hour + t.minute / 60.0
-        }
-        producer.runTransaction { lineSeries { series(xs, readings.map { it.value }) } }
-    }
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            rememberLineCartesianLayer(),
-            startAxis = VerticalAxis.rememberStart(),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                valueFormatter = CartesianValueFormatter { _, value, _ -> "%02d:00".format(value.toInt()) },
-            ),
-        ),
-        modelProducer = producer,
-        modifier = Modifier.fillMaxWidth().height(180.dp),
-    )
 }
 
 private val TIME = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())

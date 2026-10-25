@@ -46,6 +46,9 @@ interface ReadingDao {
     @Query("SELECT * FROM reading WHERE metric = :metric AND measuredAtMillis >= :from AND measuredAtMillis < :to ORDER BY measuredAtMillis")
     fun observeBetween(metric: String, from: Long, to: Long): Flow<List<ReadingEntity>>
 
+    @Query("SELECT * FROM reading WHERE metric = :metric ORDER BY measuredAtMillis")
+    suspend fun all(metric: String): List<ReadingEntity>
+
     @Query("SELECT COUNT(*) FROM reading")
     suspend fun count(): Int
 
@@ -67,6 +70,12 @@ interface SleepDao {
 
     @Query("SELECT * FROM sleep_segment WHERE sessionId = :sessionId ORDER BY startAtMillis")
     suspend fun segments(sessionId: Long): List<SleepSegmentEntity>
+
+    @Query("SELECT * FROM sleep_session ORDER BY startAtMillis")
+    fun observeAllSessions(): Flow<List<SleepSessionEntity>>
+
+    @Query("SELECT * FROM sleep_segment ORDER BY startAtMillis")
+    fun observeAllSegments(): Flow<List<SleepSegmentEntity>>
 
     @Query("SELECT MAX(wakeDate) FROM sleep_session")
     fun observeLatestWakeDate(): Flow<String?>
