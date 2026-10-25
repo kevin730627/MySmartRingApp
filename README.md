@@ -97,6 +97,10 @@ sdk.dir=/path/to/Android/Sdk
 
 `ring-protocol/src/test/resources/capture-2026-10-24.txt` 是測試用的戒指封包側錄，內含作者一晚的真實心率、血氧與睡眠原始資料。
 
+## 授權
+
+本專案以 [MIT License](LICENSE) 授權。
+
 ## 免責聲明
 
 本專案為個人學習與自用專案，與 FutureLab 及 FixFate 無關。協定內容來自對自己裝置的藍牙封包側錄與對照，僅供互通性與個人使用。產出的數值不是醫療診斷，請勿作為醫療判斷依據。
