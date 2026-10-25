@@ -83,6 +83,7 @@ private fun SleepList(viewModel: DashboardViewModel) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Summary(night)
                     Hypnogram(night)
+                    SleepVitals(viewModel, night)
                 }
             }
         }

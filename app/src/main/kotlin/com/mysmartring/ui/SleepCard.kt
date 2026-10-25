@@ -19,10 +19,14 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mysmartring.data.ReadingEntity
 import com.mysmartring.data.SleepNight
+import com.mysmartring.ring.Metric
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -50,6 +54,7 @@ fun SleepCard(viewModel: DashboardViewModel, onClick: () -> Unit) {
             } else {
                 Summary(n)
                 Hypnogram(n)
+                SleepVitals(viewModel, n)
             }
         }
     }
@@ -119,6 +124,50 @@ internal fun Hypnogram(night: SleepNight) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(CLOCK.format(Instant.ofEpochMilli(night.startAtMillis)), style = MaterialTheme.typography.bodySmall)
         Text(CLOCK.format(Instant.ofEpochMilli(night.endAtMillis)), style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+/** 睡眠期間（第一段入睡到最後一段醒來）的心率與血氧，橫軸與階段圖對齊 */
+@Composable
+internal fun SleepVitals(viewModel: DashboardViewModel, night: SleepNight) {
+    val heart by remember(night.startAtMillis, night.endAtMillis) {
+        viewModel.between(Metric.HEART_RATE, night.startAtMillis, night.endAtMillis + 1)
+    }.collectAsStateWithLifecycle(emptyList())
+    val oxygen by remember(night.startAtMillis, night.endAtMillis) {
+        viewModel.between(Metric.BLOOD_OXYGEN, night.startAtMillis, night.endAtMillis + 1)
+    }.collectAsStateWithLifecycle(emptyList())
+    VitalStrip("心率", "bpm", heart, night, Color(0xFFE53935))
+    VitalStrip("血氧", "%", oxygen, night, Color(0xFF1E88E5))
+}
+
+@Composable
+private fun VitalStrip(label: String, unit: String, readings: List<ReadingEntity>, night: SleepNight, color: Color) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = color)
+        val values = readings.map { it.value }
+        Text(
+            if (values.isEmpty()) "睡眠期間沒有資料"
+            else "平均 ${values.average().toInt()}　最低 ${values.min()}　最高 ${values.max()} $unit",
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+    val frame = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val totalMillis = (night.endAtMillis - night.startAtMillis).coerceAtLeast(1)
+    Canvas(Modifier.fillMaxWidth().height(64.dp)) {
+        drawRect(frame, style = Stroke(width = 1.dp.toPx()))
+        if (readings.isEmpty()) return@Canvas
+        // 縱軸依資料上下各留 2，且至少涵蓋 4 個單位，血氧變化很小時才不會畫成一條直線
+        val low = readings.minOf { it.value } - 2f
+        val high = maxOf(readings.maxOf { it.value } + 2f, low + 4f)
+        val pad = 4.dp.toPx()
+        fun x(millis: Long) = (millis - night.startAtMillis).toFloat() / totalMillis * size.width
+        fun y(value: Int) = pad + (high - value) / (high - low) * (size.height - 2 * pad)
+        val path = Path()
+        readings.forEachIndexed { i, r ->
+            if (i == 0) path.moveTo(x(r.measuredAtMillis), y(r.value)) else path.lineTo(x(r.measuredAtMillis), y(r.value))
+        }
+        drawPath(path, color, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+        readings.forEach { drawCircle(color, radius = 2.dp.toPx(), center = Offset(x(it.measuredAtMillis), y(it.value))) }
     }
 }
 

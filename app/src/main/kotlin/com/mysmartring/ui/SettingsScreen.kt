@@ -30,6 +30,7 @@ import java.time.LocalDate
 
 private enum class Confirm(val title: String, val text: String) {
     REBUILD("重建資料", "會清除所有 Reading 與睡眠，依最新解析器從 Raw Frame 重算。Raw Frame 不受影響。"),
+    UNPAIR("解除配對", "本 app 會忘記這枚戒指，之後不再自動同步。已儲存的心率、血氧與睡眠資料都會保留。戒指上尚未同步的資料也還在，重新配對後仍可取得。"),
     RESTORE("還原資料庫", "會用選取的檔案完全取代目前所有資料，目前尚未備份的資料會消失。完成後 app 會重新啟動。"),
 }
 
@@ -39,6 +40,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, 
     val message by viewModel.message.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<Confirm?>(null) }
+    val ring by remember { dashboard.pairedRing }.collectAsStateWithLifecycle(null)
 
     val exportFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { it?.let(viewModel::export) }
     val backupFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { it?.let(viewModel::backup) }
@@ -54,8 +56,14 @@ fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, 
             Section("儀表板", "選擇要顯示的卡片、調整順序，以及趨勢卡片的時間範圍。") {
                 Button(onClick = onEditDashboard) { Text("自訂儀表板") }
             }
-            Section("戒指", "換手機或戒指失聯時重新配對。戒指必須先從 FixFate 解除綁定。") {
-                Button(onClick = { dashboard.pair(); onBack() }, enabled = !busy) { Text("重新配對") }
+            val paired = ring
+            Section(
+                "戒指",
+                if (paired == null) "目前沒有配對的戒指。配對前戒指必須先從 FixFate 解除綁定。"
+                else "已配對：${paired.name}。換戒指或戒指失聯時可重新配對，不再使用時可解除配對。",
+            ) {
+                Button(onClick = { dashboard.pair(); onBack() }, enabled = !busy) { Text(if (paired == null) "配對戒指" else "重新配對") }
+                if (paired != null) OutlinedButton(onClick = { confirm = Confirm.UNPAIR }, enabled = !busy) { Text("解除配對") }
             }
             Section("匯出", "選一個資料夾，寫出心率、血氧、睡眠的 CSV 與一份完整 JSON。不含 Raw Frame。") {
                 Button(onClick = { exportFolder.launch(null) }, enabled = !busy) { Text("匯出 CSV 與 JSON") }
@@ -79,6 +87,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, 
                 TextButton(onClick = {
                     confirm = null
                     when (c) {
+                        Confirm.UNPAIR -> dashboard.unpair()
                         Confirm.REBUILD -> viewModel.rebuild()
                         Confirm.RESTORE -> restoreFile.launch(arrayOf("*/*"))
                     }

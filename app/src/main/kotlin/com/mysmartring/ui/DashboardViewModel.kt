@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mysmartring.AppContainer
+import com.mysmartring.ble.BluetoothOffException
 import com.mysmartring.ble.SyncRunner
 import com.mysmartring.data.PairedRingEntity
 import com.mysmartring.data.CardConfig
@@ -37,6 +38,7 @@ import java.time.ZoneId
 sealed interface SyncUiState {
     data object Idle : SyncUiState
     data object NotPaired : SyncUiState
+    data object BluetoothOff : SyncUiState
     data class Working(val message: String) : SyncUiState
     data class Done(val finishedAt: Instant) : SyncUiState
     data class Failed(val message: String) : SyncUiState
@@ -121,7 +123,24 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
         if (ring == null) _syncState.value = SyncUiState.NotPaired else syncWith(ring)
     }
 
+    /** 目前配對的戒指；沒有配對時為 null */
+    val pairedRing: Flow<PairedRingEntity?> = container.database.pairedRingDao().observe()
+
+    /** 解除配對：先停掉進行中的連線，再忘記戒指。已儲存的資料不動 */
+    fun unpair() {
+        job?.cancel()
+        viewModelScope.launch {
+            container.database.pairedRingDao().delete()
+            _syncState.value = SyncUiState.NotPaired
+        }
+    }
+
+    /** [from, to) 之間的 Reading，資料庫有變動就會重新送出 */
+    fun between(metric: Metric, from: Long, to: Long): Flow<List<ReadingEntity>> =
+        readings.observeBetween(metric.name, from, to)
+
     fun pair() = launchExclusive {
+        requireBluetooth()
         _syncState.value = SyncUiState.Working("掃描中，請讓戒指靠近手機…")
         val found = withTimeout(SCAN_TIMEOUT_MS) { container.transport.scan().first() }
         val ring = PairedRingEntity(macAddress = found.macAddress, name = found.name, pairedAtMillis = System.currentTimeMillis())
@@ -129,7 +148,13 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
         syncWith(ring)
     }
 
+    /** 建立 GATT 連線或掃描之前先確認手機藍牙已開啟 */
+    private fun requireBluetooth() {
+        if (!container.transport.isBluetoothEnabled) throw BluetoothOffException()
+    }
+
     private suspend fun syncWith(ring: PairedRingEntity) {
+        requireBluetooth()
         _syncState.value = SyncUiState.Working("連線 ${ring.name}…")
         val startedAt = Instant.now()
         container.transport.connect(ring.macAddress).use { connection ->
@@ -147,6 +172,8 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
         job = viewModelScope.launch {
             try {
                 block()
+            } catch (e: BluetoothOffException) {
+                _syncState.value = SyncUiState.BluetoothOff
             } catch (e: TimeoutCancellationException) {
                 _syncState.value = SyncUiState.Failed("找不到戒指，請確認戒指在附近且已從 FixFate 解除綁定")
             } catch (e: CancellationException) {

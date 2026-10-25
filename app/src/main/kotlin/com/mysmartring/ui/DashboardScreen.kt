@@ -1,6 +1,10 @@
 package com.mysmartring.ui
 
 import android.Manifest
+import android.content.Intent
+import android.provider.Settings
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -73,6 +77,8 @@ fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Uni
 
     // 開啟 app 且有權限時自動同步一次
     LaunchedEffect(granted) { if (granted) viewModel.sync() }
+    // 從藍牙設定回來時，若剛才因為藍牙未開啟而沒同步，就再試一次
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { if (granted && syncState is SyncUiState.BluetoothOff) viewModel.sync() }
 
     Scaffold(topBar = { CenterAlignedTopAppBar(title = { Text("MySmartRing") }, actions = { TextButton(onClick = onOpenSettings) { Text("設定") } }) }) { padding ->
         PullToRefreshBox(
@@ -85,7 +91,14 @@ fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Uni
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item { StatusCard(granted, syncState, onGrant = { requestPermissions.launch(PERMISSIONS) }, onPair = viewModel::pair) }
+                item {
+                    StatusCard(
+                        granted, syncState,
+                        onGrant = { requestPermissions.launch(PERMISSIONS) },
+                        onPair = viewModel::pair,
+                        onOpenBluetooth = { context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
+                    )
+                }
                 itemsIndexed(cards.orEmpty()) { _, card ->
                     val spec = metricSpec(card.metric)
                     when {
@@ -101,13 +114,17 @@ fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Uni
 }
 
 @Composable
-private fun StatusCard(granted: Boolean, state: SyncUiState, onGrant: () -> Unit, onPair: () -> Unit) {
+private fun StatusCard(granted: Boolean, state: SyncUiState, onGrant: () -> Unit, onPair: () -> Unit, onOpenBluetooth: () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             when {
                 !granted -> {
                     Text("需要藍牙權限才能連線到戒指")
                     Button(onClick = onGrant) { Text("授權") }
+                }
+                state is SyncUiState.BluetoothOff -> {
+                    Text("藍牙未開啟，請先開啟藍牙才能同步。開啟後回到本畫面會自動同步。")
+                    Button(onClick = onOpenBluetooth) { Text("開啟藍牙") }
                 }
                 state is SyncUiState.NotPaired -> {
                     Text("尚未配對戒指。請先從 FixFate 解除綁定，並讓戒指靠近手機。")

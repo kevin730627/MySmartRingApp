@@ -44,8 +44,11 @@ internal object RingGatt {
 class AndroidRingTransport(private val context: Context) : RingTransport {
     private val adapter get() = context.getSystemService(BluetoothManager::class.java).adapter
 
+    override val isBluetoothEnabled: Boolean get() = adapter?.isEnabled == true
+
     override fun scan(): Flow<FoundRing> = callbackFlow {
-        val scanner = adapter.bluetoothLeScanner ?: throw IOException("藍牙未開啟")
+        if (!isBluetoothEnabled) throw BluetoothOffException()
+        val scanner = adapter.bluetoothLeScanner ?: throw BluetoothOffException()
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 val name = result.scanRecord?.deviceName ?: result.device.name ?: return
@@ -63,6 +66,7 @@ class AndroidRingTransport(private val context: Context) : RingTransport {
     }
 
     override suspend fun connect(macAddress: String): RingConnection {
+        if (!isBluetoothEnabled) throw BluetoothOffException()
         val connection = GattConnection(context)
         try {
             connection.open(adapter.getRemoteDevice(macAddress))

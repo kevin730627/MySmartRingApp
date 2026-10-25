@@ -97,6 +97,13 @@ interface PairedRingDao {
 
     @Query("SELECT * FROM paired_ring WHERE id = 1")
     suspend fun get(): PairedRingEntity?
+
+    @Query("SELECT * FROM paired_ring WHERE id = 1")
+    fun observe(): Flow<PairedRingEntity?>
+
+    /** 只忘記這枚戒指，已儲存的 Reading、睡眠與 Raw Frame 都不動 */
+    @Query("DELETE FROM paired_ring")
+    suspend fun delete()
 }
 
 @Dao
