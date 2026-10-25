@@ -106,4 +106,10 @@ interface DashboardCardDao {
 
     @Query("SELECT * FROM dashboard_card ORDER BY position")
     suspend fun all(): List<DashboardCardEntity>
+
+    @Query("SELECT * FROM dashboard_card ORDER BY position")
+    fun observeAll(): Flow<List<DashboardCardEntity>>
+
+    @Query("DELETE FROM dashboard_card")
+    suspend fun deleteAll()
 }

@@ -35,7 +35,7 @@ private enum class Confirm(val title: String, val text: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, onBack: () -> Unit) {
+fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, onEditDashboard: () -> Unit, onBack: () -> Unit) {
     val message by viewModel.message.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<Confirm?>(null) }
@@ -51,6 +51,9 @@ fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, 
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Section("儀表板", "選擇要顯示的卡片、調整順序，以及趨勢卡片的時間範圍。") {
+                Button(onClick = onEditDashboard) { Text("自訂儀表板") }
+            }
             Section("戒指", "換手機或戒指失聯時重新配對。戒指必須先從 FixFate 解除綁定。") {
                 Button(onClick = { dashboard.pair(); onBack() }, enabled = !busy) { Text("重新配對") }
             }

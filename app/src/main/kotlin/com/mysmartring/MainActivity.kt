@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mysmartring.ui.DashboardEditorScreen
 import com.mysmartring.ui.DashboardScreen
 import com.mysmartring.ui.DashboardViewModel
 import com.mysmartring.ui.DetailScreen
@@ -27,9 +28,13 @@ class MainActivity : ComponentActivity() {
                 val dashboard: DashboardViewModel = viewModel(factory = DashboardViewModel.factory(container))
                 // 只有三個畫面，用一個字串代替導覽函式庫："dashboard"、"settings"、"detail/<Metric 或 SLEEP>"
                 var route by rememberSaveable { mutableStateOf("dashboard") }
-                BackHandler(enabled = route != "dashboard") { route = "dashboard" }
+                BackHandler(enabled = route != "dashboard") { route = if (route == "dashboard-editor") "settings" else "dashboard" }
                 when {
-                    route == "settings" -> SettingsScreen(viewModel(factory = SettingsViewModel.factory), dashboard) { route = "dashboard" }
+                    route == "dashboard-editor" -> DashboardEditorScreen(dashboard) { route = "settings" }
+                    route == "settings" -> SettingsScreen(
+                        viewModel(factory = SettingsViewModel.factory), dashboard,
+                        onEditDashboard = { route = "dashboard-editor" },
+                    ) { route = "dashboard" }
                     route.startsWith("detail/") -> DetailScreen(route.removePrefix("detail/"), dashboard) { route = "dashboard" }
                     else -> DashboardScreen(dashboard, onOpenDetail = { route = "detail/$it" }, onOpenSettings = { route = "settings" })
                 }

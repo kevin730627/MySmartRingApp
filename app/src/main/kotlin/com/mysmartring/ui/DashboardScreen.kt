@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -34,7 +34,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mysmartring.data.ReadingEntity
+import com.mysmartring.data.CardConfig
+import com.mysmartring.data.CardRange
+import com.mysmartring.data.CardType
 import com.mysmartring.ring.Metric
 import java.time.Instant
 import java.time.ZoneId
@@ -42,13 +44,21 @@ import java.time.format.DateTimeFormatter
 
 private val PERMISSIONS = arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
 
-/** 儀表板上顯示的 Metric 設定；之後改由 dashboard_card 資料表決定 */
-private class MetricSpec(val metric: Metric, val label: String, val unit: String)
+internal class MetricSpec(val metric: Metric, val label: String, val unit: String)
 
 private val METRICS = listOf(
     MetricSpec(Metric.HEART_RATE, "心率", "bpm"),
     MetricSpec(Metric.BLOOD_OXYGEN, "血氧", "%"),
 )
+
+internal fun metricSpec(name: String): MetricSpec? = METRICS.firstOrNull { it.metric.name == name }
+
+/** 設定頁列出 Card 時用的名稱，例如「心率・趨勢（週）」 */
+internal fun cardTitle(card: CardConfig): String = when (card.type) {
+    CardType.SLEEP -> "睡眠"
+    CardType.LATEST -> "${metricSpec(card.metric)?.label ?: card.metric}・最新值"
+    CardType.TREND -> "${metricSpec(card.metric)?.label ?: card.metric}・趨勢（${card.range.label}）"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +69,7 @@ fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Uni
         granted = result.values.all { it }
     }
     val syncState by viewModel.syncState.collectAsStateWithLifecycle()
+    val cards by viewModel.cards.collectAsStateWithLifecycle()
 
     // 開啟 app 且有權限時自動同步一次
     LaunchedEffect(granted) { if (granted) viewModel.sync() }
@@ -75,11 +86,15 @@ fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Uni
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item { StatusCard(granted, syncState, onGrant = { requestPermissions.launch(PERMISSIONS) }, onPair = viewModel::pair) }
-                items(METRICS) { spec ->
-                    LatestCard(viewModel, spec, onClick = { onOpenDetail(spec.metric.name) })
-                    TrendCard(viewModel, spec, onClick = { onOpenDetail(spec.metric.name) })
+                itemsIndexed(cards.orEmpty()) { _, card ->
+                    val spec = metricSpec(card.metric)
+                    when {
+                        card.type == CardType.SLEEP -> SleepCard(viewModel, onClick = { onOpenDetail("SLEEP") })
+                        spec == null -> Unit
+                        card.type == CardType.LATEST -> LatestCard(viewModel, spec, onClick = { onOpenDetail(card.metric) })
+                        else -> TrendCard(viewModel, spec, card.range, onClick = { onOpenDetail(card.metric) })
+                    }
                 }
-                item { SleepCard(viewModel, onClick = { onOpenDetail("SLEEP") }) }
             }
         }
     }
@@ -134,15 +149,15 @@ private fun LatestCard(viewModel: DashboardViewModel, spec: MetricSpec, onClick:
 }
 
 @Composable
-private fun TrendCard(viewModel: DashboardViewModel, spec: MetricSpec, onClick: () -> Unit) {
-    val readings by remember(spec) { viewModel.today(spec.metric) }.collectAsStateWithLifecycle(emptyList())
+private fun TrendCard(viewModel: DashboardViewModel, spec: MetricSpec, range: CardRange, onClick: () -> Unit) {
+    val readings by remember(spec, range) { viewModel.lastDays(spec.metric, range.days) }.collectAsStateWithLifecycle(emptyList())
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("${spec.label}・今日趨勢", style = MaterialTheme.typography.titleMedium)
+            Text("${spec.label}・${if (range == CardRange.DAY) "今日" else "近 ${range.days} 天"}趨勢", style = MaterialTheme.typography.titleMedium)
             if (readings.isEmpty()) {
-                Text("今天還沒有資料", style = MaterialTheme.typography.bodyMedium)
+                Text("這段期間沒有資料", style = MaterialTheme.typography.bodyMedium)
             } else {
-                TrendChart(readings, viewModel.rangeStart(1), 1)
+                TrendChart(readings, viewModel.rangeStart(range.days), range.days)
                 val values = readings.map { it.value }
                 Text(
                     "平均 ${values.average().toInt()}　最高 ${values.max()}　最低 ${values.min()}",

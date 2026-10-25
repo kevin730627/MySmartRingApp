@@ -8,7 +8,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mysmartring.AppContainer
 import com.mysmartring.ble.SyncRunner
 import com.mysmartring.data.PairedRingEntity
+import com.mysmartring.data.CardConfig
+import com.mysmartring.data.CardRange
+import com.mysmartring.data.DashboardLayout
 import com.mysmartring.data.ReadingEntity
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import com.mysmartring.data.SessionWithSegments
 import com.mysmartring.data.SleepNight
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,6 +48,23 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
 
     private var job: Job? = null
     private val readings get() = container.database.readingDao()
+
+    /** 儀表板版面；null 表示還在讀取，避免先閃出空畫面 */
+    val cards: StateFlow<List<CardConfig>?> = container.dashboardCards.cards
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    init {
+        viewModelScope.launch { container.dashboardCards.ensureDefaults() }
+    }
+
+    private fun editCards(edit: (List<CardConfig>) -> List<CardConfig>) {
+        viewModelScope.launch { container.dashboardCards.edit(edit) }
+    }
+
+    fun moveCard(index: Int, delta: Int) = editCards { DashboardLayout.move(it, index, delta) }
+    fun removeCard(index: Int) = editCards { DashboardLayout.remove(it, index) }
+    fun addCard(card: CardConfig) = editCards { DashboardLayout.add(it, card) }
+    fun setCardRange(index: Int, range: CardRange) = editCards { DashboardLayout.setRange(it, index, range) }
 
     fun latest(metric: Metric): Flow<ReadingEntity?> = readings.latest(metric.name)
 
