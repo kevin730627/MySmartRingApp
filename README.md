@@ -20,7 +20,16 @@
 | 項目 | 說明 |
 |---|---|
 | 智慧戒指 | FutureLab **PulseRing**（BLE 廣播名稱為 `PulseRing`），原廠 app 為 FixFate |
-| 手機 | Android 12（API 31）以上，需支援 BLE。開發與實測環境為 Pixel 7、Android 17 |
+| 手機 | Android 12（API 31）以上，需支援 BLE |
+
+### 已測試的硬體
+
+| 類別 | 型號 |
+|---|---|
+| 智慧戒指 | FutureLab PulseRing |
+| 手機 | Google Pixel 7（Android 17） |
+
+以上組合是作者實際用來開發與驗證的環境，同步、儀表板與睡眠圖都已在這兩個硬體上用真實資料測試過；匯出、備份還原等功能的測試範圍見 [docs/mvp-spec.md](docs/mvp-spec.md) 的「目前狀態」。其他手機或戒指型號沒有測試過。
 
 注意：
 
