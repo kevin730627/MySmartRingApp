@@ -7,3 +7,11 @@ build/
 local.properties
 *.iml
 .idea/
+
+# 與本專案無關的學習筆記與教材，不納入版本控制
+/MISSION.md
+/NOTES.md
+/RESOURCES.md
+/assets/
+/lessons/
+/reference/

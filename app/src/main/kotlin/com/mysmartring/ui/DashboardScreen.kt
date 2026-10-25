@@ -87,6 +87,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                     LatestCard(viewModel, spec)
                     TrendCard(viewModel, spec)
                 }
+                item { SleepCard(viewModel) }
             }
         }
     }

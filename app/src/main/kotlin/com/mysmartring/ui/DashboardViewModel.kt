@@ -9,6 +9,12 @@ import com.mysmartring.AppContainer
 import com.mysmartring.ble.SyncRunner
 import com.mysmartring.data.PairedRingEntity
 import com.mysmartring.data.ReadingEntity
+import com.mysmartring.data.SessionWithSegments
+import com.mysmartring.data.SleepNight
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import com.mysmartring.ring.Metric
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -39,6 +45,22 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
     private val readings get() = container.database.readingDao()
 
     fun latest(metric: Metric): Flow<ReadingEntity?> = readings.latest(metric.name)
+
+    /** 最近一個醒來日的睡眠；同一天的多段 Session 不合併，只算出段間的清醒時段 */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun latestNight(): Flow<SleepNight?> {
+        val sleep = container.database.sleepDao()
+        return sleep.observeLatestWakeDate().flatMapLatest { wakeDate ->
+            if (wakeDate == null) {
+                flowOf(null)
+            } else {
+                combine(sleep.observeSessions(wakeDate), sleep.observeSegments(wakeDate)) { sessions, segments ->
+                    val bySession = segments.groupBy { it.sessionId }
+                    SleepNight.of(wakeDate, sessions.map { SessionWithSegments(it, bySession[it.id].orEmpty()) })
+                }
+            }
+        }
+    }
 
     /** 今天（手機時區）的 Reading，資料庫有變動就會重新送出 */
     fun today(metric: Metric): Flow<List<ReadingEntity>> {

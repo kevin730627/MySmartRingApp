@@ -68,6 +68,15 @@ interface SleepDao {
     @Query("SELECT * FROM sleep_segment WHERE sessionId = :sessionId ORDER BY startAtMillis")
     suspend fun segments(sessionId: Long): List<SleepSegmentEntity>
 
+    @Query("SELECT MAX(wakeDate) FROM sleep_session")
+    fun observeLatestWakeDate(): Flow<String?>
+
+    @Query("SELECT * FROM sleep_session WHERE wakeDate = :wakeDate ORDER BY startAtMillis")
+    fun observeSessions(wakeDate: String): Flow<List<SleepSessionEntity>>
+
+    @Query("SELECT * FROM sleep_segment WHERE sessionId IN (SELECT id FROM sleep_session WHERE wakeDate = :wakeDate) ORDER BY startAtMillis")
+    fun observeSegments(wakeDate: String): Flow<List<SleepSegmentEntity>>
+
     @Query("DELETE FROM sleep_session")
     suspend fun deleteAllSessions()
 }
