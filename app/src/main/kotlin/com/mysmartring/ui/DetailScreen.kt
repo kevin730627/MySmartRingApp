@@ -38,6 +38,7 @@ fun DetailScreen(key: String, viewModel: DashboardViewModel, onBack: () -> Unit)
     val title = when (key) {
         Metric.HEART_RATE.name -> "心率"
         Metric.BLOOD_OXYGEN.name -> "血氧"
+        Metric.STEPS.name -> "步數"
         else -> "睡眠"
     }
     Scaffold(topBar = {
@@ -59,7 +60,9 @@ private fun MetricDetail(metric: Metric, label: String, viewModel: DashboardView
     }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (readings.isEmpty()) {
+            if (metric == Metric.STEPS) {
+                StepsSection(readings, viewModel.rangeStart(range.days), range.days)
+            } else if (readings.isEmpty()) {
                 Text("這段期間沒有資料")
             } else {
                 TrendChart(readings, viewModel.rangeStart(range.days), range.days)

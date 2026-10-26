@@ -33,6 +33,8 @@ object DashboardLayout {
         CardConfig("BLOOD_OXYGEN", CardType.LATEST),
         CardConfig("BLOOD_OXYGEN", CardType.TREND),
         CardConfig(CardConfig.SLEEP, CardType.SLEEP),
+        CardConfig("STEPS", CardType.LATEST),
+        CardConfig("STEPS", CardType.TREND),
     )
 
     /** 把第 [index] 張往前（[delta] 為負）或往後移，超出範圍時不動 */

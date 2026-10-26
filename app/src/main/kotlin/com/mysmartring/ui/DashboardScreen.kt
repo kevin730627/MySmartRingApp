@@ -53,6 +53,7 @@ internal class MetricSpec(val metric: Metric, val label: String, val unit: Strin
 private val METRICS = listOf(
     MetricSpec(Metric.HEART_RATE, "心率", "bpm"),
     MetricSpec(Metric.BLOOD_OXYGEN, "血氧", "%"),
+    MetricSpec(Metric.STEPS, "步數", "步"),
 )
 
 internal fun metricSpec(name: String): MetricSpec? = METRICS.firstOrNull { it.metric.name == name }
@@ -60,7 +61,7 @@ internal fun metricSpec(name: String): MetricSpec? = METRICS.firstOrNull { it.me
 /** 設定頁列出 Card 時用的名稱，例如「心率・趨勢（週）」 */
 internal fun cardTitle(card: CardConfig): String = when (card.type) {
     CardType.SLEEP -> "睡眠"
-    CardType.LATEST -> "${metricSpec(card.metric)?.label ?: card.metric}・最新值"
+    CardType.LATEST -> if (card.metric == Metric.STEPS.name) "步數・今日累計" else "${metricSpec(card.metric)?.label ?: card.metric}・最新值"
     CardType.TREND -> "${metricSpec(card.metric)?.label ?: card.metric}・趨勢（${card.range.label}）"
 }
 
@@ -104,6 +105,8 @@ fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Uni
                     when {
                         card.type == CardType.SLEEP -> SleepCard(viewModel, onClick = { onOpenDetail("SLEEP") })
                         spec == null -> Unit
+                        spec.metric == Metric.STEPS && card.type == CardType.LATEST -> StepsTodayCard(viewModel, onClick = { onOpenDetail(card.metric) })
+                        spec.metric == Metric.STEPS -> StepsTrendCard(viewModel, card.range, onClick = { onOpenDetail(card.metric) })
                         card.type == CardType.LATEST -> LatestCard(viewModel, spec, onClick = { onOpenDetail(card.metric) })
                         else -> TrendCard(viewModel, spec, card.range, onClick = { onOpenDetail(card.metric) })
                     }

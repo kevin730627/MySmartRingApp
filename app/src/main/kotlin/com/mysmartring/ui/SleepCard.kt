@@ -32,9 +32,9 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-/** 階段圖由上到下的橫帶；戒指沒有量到清醒，這裡的「清醒時段」是兩段睡眠之間的空檔 */
-private enum class Lane(val label: String, val stage: String?, val color: Color) {
-    AWAKE("清醒時段", null, Color(0xFFE57373)),
+/** 階段圖由上到下的橫帶；「清醒時段」包含戒指回報的清醒片段，以及兩段睡眠之間的空檔 */
+private enum class Lane(val label: String, val stage: String, val color: Color) {
+    AWAKE("清醒時段", "AWAKE", Color(0xFFE57373)),
     REM("REM", "REM", Color(0xFF26A69A)),
     LIGHT("淺睡", "LIGHT", Color(0xFFFFA726)),
     DEEP("深睡", "DEEP", Color(0xFF3F51B5)),
@@ -67,7 +67,7 @@ internal fun Summary(night: SleepNight) {
     Text(duration(night.sleepSeconds), style = MaterialTheme.typography.displaySmall)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         for (lane in listOf(Lane.DEEP, Lane.LIGHT, Lane.REM)) {
-            Stat(lane.label, minutes(night.stageSeconds(lane.stage!!)), lane.color)
+            Stat(lane.label, minutes(night.stageSeconds(lane.stage)), lane.color)
         }
         Stat(Lane.AWAKE.label, minutes(night.awakeSeconds), Lane.AWAKE.color)
     }
@@ -97,7 +97,8 @@ internal fun Hypnogram(night: SleepNight) {
         val bars = buildList {
             night.sessions.forEachIndexed { i, s ->
                 s.segments.forEach { seg ->
-                    val lane = Lane.entries.first { it.stage == seg.stage }
+                    // 不認得的階段不畫
+                    val lane = Lane.entries.firstOrNull { it.stage == seg.stage } ?: return@forEach
                     add(Bar(lane, seg.startAtMillis, seg.startAtMillis + seg.durationSeconds * 1000L))
                 }
                 night.awakeGaps.firstOrNull { it.startAtMillis == s.session.endAtMillis }?.let {

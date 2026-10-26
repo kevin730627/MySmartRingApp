@@ -54,6 +54,29 @@ class SleepNightTest {
     }
 
     @Test
+    fun `戒指回報的清醒片段算清醒時間，不算睡眠時間`() {
+        val withAwake = session(
+            1, at(1, 1), at(2, 16),
+            Triple("LIGHT", at(1, 1), 4000), Triple("AWAKE", at(2, 14), 135),
+        )
+        val next = session(2, at(2, 48), at(8, 5), Triple("LIGHT", at(2, 48), 3600))
+        val night = SleepNight.of("2026-10-26", listOf(withAwake, next))!!
+
+        assertEquals(4000L + 3600, night.sleepSeconds)
+        // 清醒片段 135 秒，加上兩段之間 32 分 22 秒的空檔
+        assertEquals(135L + (at(2, 48) - at(2, 16)) / 1000, night.awakeSeconds)
+        assertEquals(135L, night.stageSeconds("AWAKE"))
+    }
+
+    @Test
+    fun `未知階段不計入睡眠也不計入清醒`() {
+        val s = session(1, at(1, 0), at(2, 0), Triple("LIGHT", at(1, 0), 1800), Triple("UNKNOWN", at(1, 30), 600))
+        val night = SleepNight.of("2026-10-26", listOf(s))!!
+        assertEquals(1800L, night.sleepSeconds)
+        assertEquals(0L, night.awakeSeconds)
+    }
+
+    @Test
     fun `輸入順序顛倒也依入睡時間排序`() {
         val night = SleepNight.of("2026-10-25", listOf(second, first))!!
         assertEquals(listOf(1L, 2L), night.sessions.map { it.session.id })

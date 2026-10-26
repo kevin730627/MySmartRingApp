@@ -26,10 +26,15 @@ class SleepNight private constructor(
     fun stageSeconds(stage: String): Long =
         sessions.sumOf { s -> s.segments.filter { it.stage == stage }.sumOf { it.durationSeconds.toLong() } }
 
-    val sleepSeconds: Long get() = sessions.sumOf { s -> s.segments.sumOf { it.durationSeconds.toLong() } }
-    val awakeSeconds: Long get() = awakeGaps.sumOf { it.seconds }
+    /** 睡眠時間：只加總深睡、淺睡、REM；清醒與未知階段不算 */
+    val sleepSeconds: Long get() = SLEEP_STAGES.sumOf { stageSeconds(it) }
+
+    /** 清醒時間：戒指回報的清醒片段，加上段與段之間的空檔 */
+    val awakeSeconds: Long get() = stageSeconds("AWAKE") + awakeGaps.sumOf { it.seconds }
 
     companion object {
+        private val SLEEP_STAGES = listOf("DEEP", "LIGHT", "REM")
+
         /** [sessions] 為同一個醒來日的所有 Session；沒有資料時回傳 null */
         fun of(wakeDate: String, sessions: List<SessionWithSegments>): SleepNight? {
             if (sessions.isEmpty()) return null

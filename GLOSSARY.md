@@ -17,7 +17,7 @@ _避免使用_：device、wearable
 ## 數據
 
 **Metric（指標）**
-一種被量測的健康項目。MVP 範圍：心率、血氧、睡眠。步數、HRV 與體溫列為之後。
+一種被量測的健康項目。目前有：心率、血氧、睡眠、步數。步數是每半小時區間的步數，不是瞬間值，當日步數要把區間加總。HRV 與體溫列為之後。
 
 **Reading（量測值）**
 某個 Metric 在某個時間點的一筆數值。睡眠不是 Reading，而是 Sleep Session。
@@ -26,13 +26,13 @@ _避免使用_：device、wearable
 從入睡到醒來的一段連續睡眠，內含深睡、淺睡、REM 的時間片段。歸屬於「醒來那天」。是與 Reading 並列的獨立概念。戒指可能把一晚切成多段 Sleep Session，各段分開保存，不合併。
 
 **Sleep Stage（睡眠階段）**
-Sleep Session 內的一個時間片段所處的狀態：深睡、淺睡、REM。戒指不回報清醒階段。
+Sleep Session 內的一個時間片段所處的狀態：深睡、淺睡、REM，以及戒指偶爾回報的清醒（短片段，推斷自階段碼 0xF4）。清醒不計入睡眠時間。
 
 **Sleep Night（一晚睡眠）**
 醒來在同一天的所有 Sleep Session，依入睡時間排列。只是顯示與統計上的分組，不是資料庫裡合併後的紀錄。
 
 **Awake Gap（清醒時段）**
-同一個 Sleep Night 中，相鄰兩段 Sleep Session 之間的空檔。戒指本身不回報清醒，所以清醒時段只出現在分段處，不屬於任何 Sleep Stage，也不計入睡眠時間。
+清醒的時間。包含兩部分：戒指回報的清醒階段，以及同一個 Sleep Night 中相鄰兩段 Sleep Session 之間的空檔（空檔不屬於任何 Sleep Stage）。兩者都不計入睡眠時間。
 
 **Raw Frame（原始封包）**
 戒指在 Sync 時傳來的原始位元組。與解析後的 Reading、Sleep Session 一併保存，使解析錯誤能事後修正。
