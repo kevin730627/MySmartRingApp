@@ -65,7 +65,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, 
                 Button(onClick = { dashboard.pair(); onBack() }, enabled = !busy) { Text(if (paired == null) "配對戒指" else "重新配對") }
                 if (paired != null) OutlinedButton(onClick = { confirm = Confirm.UNPAIR }, enabled = !busy) { Text("解除配對") }
             }
-            Section("匯出", "選一個資料夾，寫出心率、血氧、步數、睡眠的 CSV 與一份完整 JSON。步數是每半小時區間的步數。不含 Raw Frame。") {
+            Section("匯出", "選一個資料夾，寫出心率、血氧、血壓、步數、睡眠的 CSV 與一份完整 JSON。步數是每半小時區間的步數。不含 Raw Frame。") {
                 Button(onClick = { exportFolder.launch(null) }, enabled = !busy) { Text("匯出 CSV 與 JSON") }
             }
             Section("備份與還原", "備份整個資料庫檔（含 Raw Frame）。自動備份已關閉，換手機前請先備份。") {

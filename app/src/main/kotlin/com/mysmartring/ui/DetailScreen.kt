@@ -39,13 +39,18 @@ fun DetailScreen(key: String, viewModel: DashboardViewModel, onBack: () -> Unit)
         Metric.HEART_RATE.name -> "心率"
         Metric.BLOOD_OXYGEN.name -> "血氧"
         Metric.STEPS.name -> "步數"
+        BLOOD_PRESSURE -> "血壓"
         else -> "睡眠"
     }
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = { Text(title) }, navigationIcon = { TextButton(onClick = onBack) { Text("返回") } })
     }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp)) {
-            if (key == "SLEEP") SleepList(viewModel) else MetricDetail(Metric.valueOf(key), title, viewModel)
+            when (key) {
+                "SLEEP" -> SleepList(viewModel)
+                BLOOD_PRESSURE -> BloodPressureDetail(viewModel)
+                else -> MetricDetail(Metric.valueOf(key), title, viewModel)
+            }
         }
     }
 }
@@ -69,6 +74,22 @@ private fun MetricDetail(metric: Metric, label: String, viewModel: DashboardView
                 val values = readings.map { it.value }
                 Text("$label・${readings.size} 筆　平均 ${values.average().toInt()}　最高 ${values.max()}　最低 ${values.min()}", style = MaterialTheme.typography.bodySmall)
             }
+        }
+    }
+}
+
+@Composable
+private fun BloodPressureDetail(viewModel: DashboardViewModel) {
+    var selected by rememberSaveable { mutableIntStateOf(0) }
+    val range = RANGES[selected]
+    val systolic by remember(range) { viewModel.lastDays(Metric.BLOOD_PRESSURE_SYSTOLIC, range.days) }.collectAsStateWithLifecycle(emptyList())
+    val diastolic by remember(range) { viewModel.lastDays(Metric.BLOOD_PRESSURE_DIASTOLIC, range.days) }.collectAsStateWithLifecycle(emptyList())
+    Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        RANGES.forEachIndexed { i, r -> FilterChip(selected = i == selected, onClick = { selected = i }, label = { Text(r.label) }) }
+    }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            BloodPressureSection(systolic, diastolic, viewModel.rangeStart(range.days), range.days)
         }
     }
 }

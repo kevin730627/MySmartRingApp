@@ -47,15 +47,18 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
         val heart = db.readingDao().all(Metric.HEART_RATE.name)
         val oxygen = db.readingDao().all(Metric.BLOOD_OXYGEN.name)
         val steps = db.readingDao().all(Metric.STEPS.name)
+        val systolic = db.readingDao().all(Metric.BLOOD_PRESSURE_SYSTOLIC.name)
+        val diastolic = db.readingDao().all(Metric.BLOOD_PRESSURE_DIASTOLIC.name)
         val sleeps = db.sleepDao().sessions().map { SleepExport(it, db.sleepDao().segments(it.id)) }
         val stamp = LocalDate.now(zone).toString().replace("-", "")
         val files = mapOf(
-            "heart_rate_$stamp.csv" to ("text/csv" to "﻿" + Exporter.readingsCsv(heart, zone)),
-            "blood_oxygen_$stamp.csv" to ("text/csv" to "﻿" + Exporter.readingsCsv(oxygen, zone)),
+            "heart_rate_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.readingsCsv(heart, zone)),
+            "blood_oxygen_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.readingsCsv(oxygen, zone)),
             // 步數的「數值」是該半小時區間的步數，時間點為區間起點
-            "steps_$stamp.csv" to ("text/csv" to "﻿" + Exporter.readingsCsv(steps, zone)),
-            "sleep_$stamp.csv" to ("text/csv" to "﻿" + Exporter.sleepCsv(sleeps, zone)),
-            "mysmartring_$stamp.json" to ("application/json" to Exporter.json(heart + oxygen + steps, sleeps, zone)),
+            "steps_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.readingsCsv(steps, zone)),
+            "blood_pressure_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.bloodPressureCsv(systolic, diastolic, zone)),
+            "sleep_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.sleepCsv(sleeps, zone)),
+            "mysmartring_$stamp.json" to ("application/json" to Exporter.json(heart + oxygen + steps + systolic + diastolic, sleeps, zone)),
         )
         val resolver = app.contentResolver
         val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))

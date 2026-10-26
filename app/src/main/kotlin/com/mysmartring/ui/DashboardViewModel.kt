@@ -35,6 +35,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
+class BloodPressureSample(val systolic: Int, val diastolic: Int, val measuredAtMillis: Long)
+
 sealed interface SyncUiState {
     data object Idle : SyncUiState
     data object NotPaired : SyncUiState
@@ -85,6 +87,12 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
     }
+
+    /** 最新一筆血壓（收縮壓與舒張壓時間點相同） */
+    fun latestBloodPressure(): Flow<BloodPressureSample?> =
+        combine(latest(Metric.BLOOD_PRESSURE_SYSTOLIC), latest(Metric.BLOOD_PRESSURE_DIASTOLIC)) { sys, dia ->
+            if (sys == null || dia == null) null else BloodPressureSample(sys.value, dia.value, sys.measuredAtMillis)
+        }
 
     /** 今天起往前共 [days] 天（含今天）的起點 */
     fun rangeStart(days: Int): Long {

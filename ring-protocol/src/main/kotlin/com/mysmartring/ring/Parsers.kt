@@ -42,6 +42,24 @@ object Parsers {
         }
     }
 
+    /**
+     * 0517：每筆 8B，`[時間 u32][狀態 1B][收縮壓][舒張壓][心率]`。每筆產生收縮壓與舒張壓兩個 Reading，
+     * 任一為 0 視為無效而略過。`0518` 裡有同樣的血壓欄位（272 筆全部一致），只從 `0517` 取，避免重複
+     */
+    fun bloodPressure(stream: ByteArray, zone: ZoneId): List<Reading> {
+        requireMultiple(stream, 8, "血壓")
+        return (stream.indices step 8).flatMap { i ->
+            val systolic = stream.u8(i + 5)
+            val diastolic = stream.u8(i + 6)
+            if (systolic == 0 || diastolic == 0) {
+                emptyList()
+            } else {
+                val at = RingTime.toInstant(stream.u32(i), zone)
+                listOf(Reading(Metric.BLOOD_PRESSURE_SYSTOLIC, at, systolic), Reading(Metric.BLOOD_PRESSURE_DIASTOLIC, at, diastolic))
+            }
+        }
+    }
+
     /** 0511：每筆 14B，`[起始 u32][結束 u32][步數 u16][距離 u16][熱量 u16]`，每筆涵蓋半小時，沒有活動的區間不會出現 */
     fun activity(stream: ByteArray, zone: ZoneId): List<ActivityRecord> {
         requireMultiple(stream, 14, "活動")

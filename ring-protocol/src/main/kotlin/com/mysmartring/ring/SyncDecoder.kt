@@ -42,12 +42,15 @@ object SyncDecoder {
         val sleep = attempt("睡眠") {
             Parsers.sleep(Parsers.stream(frames, Commands.DATA_SLEEP), zone) { errors += "睡眠：$it" }
         }
+        val bloodPressure = attempt("血壓") {
+            Parsers.bloodPressure(Parsers.stream(frames, Commands.DATA_BLOOD_PRESSURE), zone)
+        }
         // 步數以區間起點為時間點；0 步的區間不產生 Reading
         val steps = attempt("活動") {
             Parsers.activity(Parsers.stream(frames, Commands.DATA_ACTIVITY), zone)
                 .filter { it.steps > 0 }
                 .map { Reading(Metric.STEPS, it.startAt, it.steps) }
         }
-        return DecodedSync(heartRate + spot + steps, sleep, errors)
+        return DecodedSync(heartRate + spot + bloodPressure + steps, sleep, errors)
     }
 }

@@ -2,8 +2,12 @@ package com.mysmartring.ring
 
 import java.time.Instant
 
-/** [STEPS] 是半小時區間內的步數，不是瞬間值：同一天的所有 Reading 加總才是當日步數 */
-enum class Metric { HEART_RATE, BLOOD_OXYGEN, STEPS }
+/**
+ * 血壓以收縮壓與舒張壓兩個 Metric 各存一筆，時間點相同。戒指的血壓是估算值：
+ * 收縮壓與心率的相關係數約 0.95，不是獨立量測，不可當成醫療數據。
+ *
+ * [STEPS] 是半小時區間內的步數，不是瞬間值：同一天的所有 Reading 加總才是當日步數 */
+enum class Metric { HEART_RATE, BLOOD_OXYGEN, STEPS, BLOOD_PRESSURE_SYSTOLIC, BLOOD_PRESSURE_DIASTOLIC }
 
 /** 某個 Metric 在某個時間點的一筆數值 */
 data class Reading(val metric: Metric, val measuredAt: Instant, val value: Int)

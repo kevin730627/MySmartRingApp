@@ -33,17 +33,24 @@ private val DAY_HOUR = DateTimeFormatter.ofPattern("M/d HH:mm")
  * 縱軸依資料的最大最小值留白，不從 0 開始。
  */
 @Composable
-fun TrendChart(readings: List<ReadingEntity>, startMillis: Long, days: Int, modifier: Modifier = Modifier) {
+fun TrendChart(readings: List<ReadingEntity>, startMillis: Long, days: Int, modifier: Modifier = Modifier, second: List<ReadingEntity> = emptyList()) {
     val producer = remember { CartesianChartModelProducer() }
-    LaunchedEffect(readings) {
+    LaunchedEffect(readings, second) {
         // Vico 的 x 值最多容許四位小數，取整數分鐘
-        val xs = readings.map { ((it.measuredAtMillis - startMillis) / 60_000).toDouble() }
-        producer.runTransaction { lineSeries { series(xs, readings.map { it.value }) } }
+        fun xs(list: List<ReadingEntity>) = list.map { ((it.measuredAtMillis - startMillis) / 60_000).toDouble() }
+        producer.runTransaction {
+            lineSeries {
+                series(xs(readings), readings.map { it.value })
+                // 第二條線（例如舒張壓）；空的序列 Vico 不接受，所以有資料才加
+                if (second.isNotEmpty()) series(xs(second), second.map { it.value })
+            }
+        }
     }
     val zone = ZoneId.systemDefault()
     val formatter = if (days == 1) HOUR_MINUTE else DAY_HOUR
-    val minY = (readings.minOf { it.value } - 5).toDouble()
-    val maxY = (readings.maxOf { it.value } + 5).toDouble()
+    val all = readings + second
+    val minY = (all.minOf { it.value } - 5).toDouble()
+    val maxY = (all.maxOf { it.value } + 5).toDouble()
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(

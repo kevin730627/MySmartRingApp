@@ -38,6 +38,35 @@ class ExporterTest {
         )
     }
 
+    private fun bp(metric: String, iso: String, value: Int) =
+        ReadingEntity(metric = metric, measuredAtMillis = ms(iso), value = value, syncId = 1)
+
+    @Test
+    fun `血壓 CSV 把收縮壓與舒張壓依時間點配成一列`() {
+        val systolic = listOf(bp("BLOOD_PRESSURE_SYSTOLIC", "2026-10-24T05:00:00Z", 114), bp("BLOOD_PRESSURE_SYSTOLIC", "2026-10-24T05:10:00Z", 115))
+        val diastolic = listOf(bp("BLOOD_PRESSURE_DIASTOLIC", "2026-10-24T05:00:00Z", 74), bp("BLOOD_PRESSURE_DIASTOLIC", "2026-10-24T05:10:00Z", 75))
+        assertEquals(
+            "時間,收縮壓,舒張壓\n2026-10-24T13:00:00+08:00,114,74\n2026-10-24T13:10:00+08:00,115,75\n",
+            Exporter.bloodPressureCsv(systolic, diastolic, zone),
+        )
+    }
+
+    @Test
+    fun `血壓 CSV 只有一邊有資料的時間點，缺的欄位留空`() {
+        val csv = Exporter.bloodPressureCsv(
+            listOf(bp("BLOOD_PRESSURE_SYSTOLIC", "2026-10-24T05:00:00Z", 114)),
+            listOf(bp("BLOOD_PRESSURE_DIASTOLIC", "2026-10-24T05:10:00Z", 75)),
+            zone,
+        )
+        assertEquals(listOf("時間,收縮壓,舒張壓", "2026-10-24T13:00:00+08:00,114,", "2026-10-24T13:10:00+08:00,,75"), csv.trim().lines())
+    }
+
+    @Test
+    fun `BOM 是單一的 U+FEFF 字元`() {
+        assertEquals(1, Exporter.BOM.length)
+        assertEquals(0xFEFF, Exporter.BOM[0].code)
+    }
+
     @Test
     fun `沒有 Reading 時 CSV 只有標題列`() {
         assertEquals("時間,數值\n", Exporter.readingsCsv(emptyList(), zone))
