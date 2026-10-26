@@ -15,6 +15,7 @@
 - 圖表：折線與統計用 Vico；睡眠階段圖用 Canvas 自繪（見下）。
 - 權限只有 `BLUETOOTH_SCAN`（宣告不推導位置）與 `BLUETOOTH_CONNECT`。關閉 Android 自動備份。
 - 介面繁體中文，識別字英文。
+- **App 圖示**：自適應圖示（向量，minSdk 31 不需要點陣圖）。暖灰黑底（`#262624`）、陶土橘的戒指環、環中的奶油色心跳線，戒指頂端有一顆小寶石。另有單色版，供 Android 13 以上的主題圖示使用。檔案在 `res/drawable/ic_launcher_*.xml` 與 `res/mipmap-anydpi/`，全部畫在中央 66dp 安全區內。
 - **深色主題**：只有深色一種，不跟隨系統。參考 Claude desktop：暖灰黑底（`#262624`）、較亮的卡片（`#30302E`）、奶油色文字、陶土橘強調色（`#D97757`），大數字與標題用襯線體，卡片圓角較大。配色集中在 `ui/Theme.kt` 的 `AppColors`，圖表（Vico）也跟著 Material 主題走。睡眠階段與心率、血氧曲線的顏色同樣在 `AppColors`，要在深色底上夠亮。
 
 ## 行為
