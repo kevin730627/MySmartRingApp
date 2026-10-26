@@ -13,6 +13,7 @@ import com.mysmartring.data.CardConfig
 import com.mysmartring.data.CardRange
 import com.mysmartring.data.DashboardLayout
 import com.mysmartring.data.ReadingEntity
+import com.mysmartring.data.UserSettings
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import com.mysmartring.data.SessionWithSegments
@@ -52,6 +53,18 @@ class DashboardViewModel(private val container: AppContainer) : ViewModel() {
 
     private var job: Job? = null
     private val readings get() = container.database.readingDao()
+
+    /** 預期每日步數，步數圓環的滿格 */
+    val stepGoal: StateFlow<Int> = container.settings.stepGoal
+
+    /** 設定每日步數目標。輸入不是整數或超出範圍時回傳說明文字，成功回傳 null */
+    fun setStepGoal(input: String): String? {
+        val goal = input.trim().replace(",", "").toIntOrNull() ?: return "請輸入整數"
+        val range = UserSettings.STEP_GOAL_RANGE
+        if (goal !in range) return "目標必須介於 %,d 到 %,d 步".format(range.first, range.last)
+        container.settings.setStepGoal(goal)
+        return null
+    }
 
     /** 儀表板版面；null 表示還在讀取，避免先閃出空畫面 */
     val cards: StateFlow<List<CardConfig>?> = container.dashboardCards.cards

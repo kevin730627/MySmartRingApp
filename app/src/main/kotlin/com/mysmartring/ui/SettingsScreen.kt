@@ -3,6 +3,7 @@ package com.mysmartring.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.LocalDate
@@ -55,6 +58,21 @@ fun SettingsScreen(viewModel: SettingsViewModel, dashboard: DashboardViewModel, 
         ) {
             Section("儀表板", "選擇要顯示的卡片、調整順序，以及趨勢卡片的時間範圍。") {
                 Button(onClick = onEditDashboard) { Text("自訂儀表板") }
+            }
+            val goal by dashboard.stepGoal.collectAsStateWithLifecycle()
+            var goalInput by remember(goal) { mutableStateOf(goal.toString()) }
+            var goalError by remember { mutableStateOf<String?>(null) }
+            Section("每日步數目標", "步數圓環以這個目標為滿格。目前為 %,d 步（範圍 1,000 到 100,000）。".format(goal)) {
+                OutlinedTextField(
+                    value = goalInput,
+                    onValueChange = { goalInput = it; goalError = null },
+                    label = { Text("預期每日步數") },
+                    singleLine = true,
+                    isError = goalError != null,
+                    supportingText = goalError?.let { { Text(it) } },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+                Button(onClick = { goalError = dashboard.setStepGoal(goalInput) }) { Text("儲存目標") }
             }
             val paired = ring
             Section(

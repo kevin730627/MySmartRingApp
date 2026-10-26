@@ -22,6 +22,20 @@ class StepsAggregationTest {
     }
 
     @Test
+    fun `目標進度介於 0 到 1，超過目標仍是 1`() {
+        assertEquals(0f, StepsAggregation.progress(0, 10_000))
+        assertEquals(0.5f, StepsAggregation.progress(5_000, 10_000))
+        assertEquals(1f, StepsAggregation.progress(10_000, 10_000))
+        assertEquals(1f, StepsAggregation.progress(12_678, 10_000))
+    }
+
+    @Test
+    fun `目標不是正數時進度為 0，不會除以零`() {
+        assertEquals(0f, StepsAggregation.progress(5_000, 0))
+        assertEquals(0f, StepsAggregation.progress(5_000, -1))
+    }
+
+    @Test
     fun `同一小時的兩個半小時區間合併`() {
         val hours = StepsAggregation.byHour(
             listOf(steps("2026-10-24", "17:00", 713), steps("2026-10-24", "17:30", 614), steps("2026-10-24", "20:00", 2892)),

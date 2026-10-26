@@ -34,10 +34,10 @@ import java.time.format.DateTimeFormatter
 
 /** 階段圖由上到下的橫帶；「清醒時段」包含戒指回報的清醒片段，以及兩段睡眠之間的空檔 */
 private enum class Lane(val label: String, val stage: String, val color: Color) {
-    AWAKE("清醒時段", "AWAKE", Color(0xFFE57373)),
-    REM("REM", "REM", Color(0xFF26A69A)),
-    LIGHT("淺睡", "LIGHT", Color(0xFFFFA726)),
-    DEEP("深睡", "DEEP", Color(0xFF3F51B5)),
+    AWAKE("清醒時段", "AWAKE", AppColors.SleepAwake),
+    REM("REM", "REM", AppColors.SleepRem),
+    LIGHT("淺睡", "LIGHT", AppColors.SleepLight),
+    DEEP("深睡", "DEEP", AppColors.SleepDeep),
 }
 
 private val CLOCK = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
@@ -137,8 +137,8 @@ internal fun SleepVitals(viewModel: DashboardViewModel, night: SleepNight) {
     val oxygen by remember(night.startAtMillis, night.endAtMillis) {
         viewModel.between(Metric.BLOOD_OXYGEN, night.startAtMillis, night.endAtMillis + 1)
     }.collectAsStateWithLifecycle(emptyList())
-    VitalStrip("心率", "bpm", heart, night, Color(0xFFE53935))
-    VitalStrip("血氧", "%", oxygen, night, Color(0xFF1E88E5))
+    VitalStrip("心率", "bpm", heart, night, AppColors.HeartRate)
+    VitalStrip("血氧", "%", oxygen, night, AppColors.BloodOxygen)
 }
 
 @Composable

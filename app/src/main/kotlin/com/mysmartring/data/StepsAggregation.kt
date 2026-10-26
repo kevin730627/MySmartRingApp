@@ -12,6 +12,9 @@ import java.time.temporal.ChronoUnit
 object StepsAggregation {
     fun total(readings: List<ReadingEntity>): Int = readings.sumOf { it.value }
 
+    /** 目標達成比例，0 到 1；超過目標仍算 1（圓環畫滿），[goal] 不是正數時為 0 */
+    fun progress(steps: Int, goal: Int): Float = if (goal <= 0) 0f else (steps.toFloat() / goal).coerceIn(0f, 1f)
+
     /** 一天 24 小時各自的步數；[readings] 應只含當天的 Reading */
     fun byHour(readings: List<ReadingEntity>, zone: ZoneId): List<Int> {
         val hours = IntArray(24)
