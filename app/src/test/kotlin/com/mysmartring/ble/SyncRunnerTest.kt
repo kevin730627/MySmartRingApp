@@ -98,9 +98,10 @@ class SyncRunnerTest {
 
         val dataCommands = setOf(
             Commands.DATA_HEART_RATE, Commands.DATA_SPOT_MEASUREMENT, Commands.DATA_SLEEP,
-            Commands.DATA_BLOOD_PRESSURE, Commands.DATA_ACTIVITY,
+            Commands.DATA_BLOOD_PRESSURE, Commands.DATA_ACTIVITY, Commands.GET_STATUS,
         )
         assertTrue(committed.all { commandOf(it.bytes) in dataCommands })
         assertTrue(committed.any { commandOf(it.bytes) == Commands.DATA_SLEEP })
+        assertTrue(committed.any { commandOf(it.bytes) == Commands.GET_STATUS }, "應收到電量回應")
     }
 }

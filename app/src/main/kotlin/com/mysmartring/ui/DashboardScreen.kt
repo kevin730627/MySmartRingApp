@@ -54,6 +54,8 @@ private val METRICS = listOf(
     MetricSpec(Metric.HEART_RATE, "心率", "bpm"),
     MetricSpec(Metric.BLOOD_OXYGEN, "血氧", "%"),
     MetricSpec(Metric.STEPS, "步數", "步"),
+    MetricSpec(Metric.TEMPERATURE, "體溫", "°C"),
+    MetricSpec(Metric.BATTERY, "電池", "%"),
 )
 
 private fun metricLabel(name: String): String = if (name == BLOOD_PRESSURE) "血壓" else metricSpec(name)?.label ?: name
@@ -109,6 +111,8 @@ fun DashboardScreen(viewModel: DashboardViewModel, onOpenDetail: (String) -> Uni
                         card.metric == BLOOD_PRESSURE -> BloodPressureTrendCard(viewModel, card.range, onClick = { onOpenDetail(card.metric) })
                         card.type == CardType.SLEEP -> SleepCard(viewModel, onClick = { onOpenDetail("SLEEP") })
                         spec == null -> Unit
+                        spec.metric == Metric.TEMPERATURE && card.type == CardType.LATEST -> TemperatureLatestCard(viewModel, onClick = { onOpenDetail(card.metric) })
+                        spec.metric == Metric.TEMPERATURE -> TemperatureTrendCard(viewModel, card.range, onClick = { onOpenDetail(card.metric) })
                         spec.metric == Metric.STEPS && card.type == CardType.LATEST -> StepsTodayCard(viewModel, onClick = { onOpenDetail(card.metric) })
                         spec.metric == Metric.STEPS -> StepsTrendCard(viewModel, card.range, onClick = { onOpenDetail(card.metric) })
                         card.type == CardType.LATEST -> LatestCard(viewModel, spec, onClick = { onOpenDetail(card.metric) })

@@ -7,6 +7,8 @@ data class DecodedSync(
     val readings: List<Reading>,
     val sleepSessions: List<SleepSession>,
     val errors: List<String>,
+    /** 這次 Sync 收到的戒指電量；沒有收到或解析失敗時為 null */
+    val batteryPercent: Int? = null,
 )
 
 /**
@@ -51,6 +53,9 @@ object SyncDecoder {
                 .filter { it.steps > 0 }
                 .map { Reading(Metric.STEPS, it.startAt, it.steps) }
         }
-        return DecodedSync(heartRate + spot + bloodPressure + steps, sleep, errors)
+        val battery = attempt("電量") {
+            frames.filter { it.command == Commands.GET_STATUS }.takeLast(1).map(Parsers::batteryPercent)
+        }.firstOrNull()
+        return DecodedSync(heartRate + spot + bloodPressure + steps, sleep, errors, battery)
     }
 }

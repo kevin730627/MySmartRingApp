@@ -30,17 +30,42 @@ object Parsers {
         }
     }
 
-    /** 0518：每筆 20B，`[時間 u32][66 01][心率][收縮壓][舒張壓][血氧][8B 未知][2B]`。只取心率與血氧 */
+    /**
+     * 0518：每筆 20B，`[時間 u32][66 01][心率][收縮壓][舒張壓][血氧][8B 未知][2B]`。
+     * 取心率、血氧與體溫。體溫在記錄的第 13、14 位元組：整數度（35–37）與十分位（0–9），
+     * 例如 `24 08` = 36.8 °C。這是從 125 筆真機樣本推論的（整數部分 117 筆為 36，十分位 0–9 平滑變動），
+     * 整數部分不在 [TEMPERATURE_RANGE] 內視為無效
+     */
     fun spotMeasurement(stream: ByteArray, zone: ZoneId): List<Reading> {
         requireMultiple(stream, 20, "複合量測")
         return (stream.indices step 20).flatMap { i ->
             val at = RingTime.toInstant(stream.u32(i), zone)
+            val degrees = stream.u8(i + 13)
+            val tenths = stream.u8(i + 14)
             listOfNotNull(
                 stream.u8(i + 6).takeIf { it != 0 }?.let { Reading(Metric.HEART_RATE, at, it) },
                 stream.u8(i + 9).takeIf { it != 0 }?.let { Reading(Metric.BLOOD_OXYGEN, at, it) },
+                (degrees * 10 + tenths).takeIf { degrees in TEMPERATURE_RANGE && tenths in 0..9 }
+                    ?.let { Reading(Metric.TEMPERATURE, at, it) },
             )
         }
     }
+
+    /**
+     * 0200：狀態回應，payload 為 `[a3 00][07 00][00][電量 1B]...`。電量是推測欄位：
+     * 側錄中該位元組為 0x62（98），且 19 次查詢都相同；尚未用 FixFate 畫面對照。
+     * 不在 0–100 之間視為解析失敗
+     */
+    fun batteryPercent(frame: Frame): Int {
+        val p = frame.payload
+        if (p.size <= 5) throw ProtocolException("狀態回應長度 ${p.size}B 不足")
+        val percent = p.u8(5)
+        if (percent > 100) throw ProtocolException("電量 $percent 超出 0–100")
+        return percent
+    }
+
+    /** 體溫整數部分的合理範圍（°C） */
+    private val TEMPERATURE_RANGE = 30..45
 
     /**
      * 0517：每筆 8B，`[時間 u32][狀態 1B][收縮壓][舒張壓][心率]`。每筆產生收縮壓與舒張壓兩個 Reading，

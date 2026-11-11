@@ -40,6 +40,11 @@ class SyncRunner(
         connection.write(Commands.setTime(now()).encode())
         awaitCommand(Commands.SET_TIME)
 
+        // 電量：沒有回應不影響其他資料的同步，只是這次沒有電量
+        connection.write(Commands.statusQuery().encode())
+        withTimeoutOrNull(frameTimeoutMs) { awaitRaw { commandOf(it) == Commands.GET_STATUS } }
+            ?.let { received += ReceivedFrame(Instant.now(), it) }
+
         for (type in DATA_TYPES) {
             connection.write(Commands.query(type.count).encode())
             val count = Parsers.countResponse(awaitCommand(type.count))

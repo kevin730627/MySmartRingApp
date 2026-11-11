@@ -6,6 +6,9 @@ import java.time.LocalDateTime
 object Commands {
     const val SET_TIME = 0x0100
 
+    /** 查詢電量等狀態，內容為 ASCII 的 "GC"（側錄中 app 每次都這樣送）。戒指以同命令回應 */
+    const val GET_STATUS = 0x0200
+
     // 查詢筆數（戒指以同命令回應 [CountResponse]）
     const val COUNT_ACTIVITY = 0x0502
     const val COUNT_SLEEP = 0x0504
@@ -42,6 +45,8 @@ object Commands {
     )
 
     fun query(command: Int): Frame = Frame(command, ByteArray(0))
+
+    fun statusQuery(): Frame = Frame(GET_STATUS, byteArrayOf('G'.code.toByte(), 'C'.code.toByte()))
 
     fun ack(): Frame = Frame(ACK, byteArrayOf(0))
 

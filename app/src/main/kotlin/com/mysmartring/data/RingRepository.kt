@@ -3,6 +3,7 @@ package com.mysmartring.data
 import androidx.room.withTransaction
 import com.mysmartring.ring.DecodedSync
 import com.mysmartring.ring.Frame
+import com.mysmartring.ring.Metric
 import com.mysmartring.ring.SyncDecoder
 import java.time.Instant
 import java.time.ZoneId
@@ -65,6 +66,12 @@ class RingRepository(private val db: AppDatabase) {
                 ReadingEntity(metric = it.metric.name, measuredAtMillis = it.measuredAt.toEpochMilli(), value = it.value, syncId = sync.id)
             },
         )
+        // 電量回應不帶時間戳記，以 Sync 開始時間為時間點
+        decoded.batteryPercent?.let {
+            db.readingDao().insertAll(
+                listOf(ReadingEntity(metric = Metric.BATTERY.name, measuredAtMillis = sync.startedAtMillis, value = it, syncId = sync.id)),
+            )
+        }
         for (s in decoded.sleepSessions) {
             val id = db.sleepDao().insertSession(
                 SleepSessionEntity(

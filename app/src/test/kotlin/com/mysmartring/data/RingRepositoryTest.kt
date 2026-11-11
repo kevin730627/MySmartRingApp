@@ -62,11 +62,16 @@ class RingRepositoryTest {
     @Test
     fun `重複的 Sync 不會產生重複的 Reading 或 Sleep Session`() = runTest {
         repo.ingest(startedAt, zone, captured)
-        val readings = db.readingDao().count()
+        // 電量每次 Sync 各記一筆（時間點是 Sync 開始時間），其餘 Reading 以時間去重
+        val battery = db.readingDao().all("BATTERY")
+        assertEquals(1, battery.size)
+        val readings = db.readingDao().count() - battery.size
 
         repo.ingest(startedAt.plusSeconds(60), zone, captured)
 
-        assertEquals(readings, db.readingDao().count())
+        assertEquals(2, db.readingDao().all("BATTERY").size)
+        assertEquals(98, db.readingDao().all("BATTERY").first().value)
+        assertEquals(readings, db.readingDao().count() - 2)
         assertEquals(1, db.sleepDao().sessions().size)
         assertEquals(captured.size * 2, db.rawFrameDao().count())
     }

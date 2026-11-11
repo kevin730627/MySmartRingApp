@@ -39,6 +39,8 @@ fun DetailScreen(key: String, viewModel: DashboardViewModel, onBack: () -> Unit)
         Metric.HEART_RATE.name -> "心率"
         Metric.BLOOD_OXYGEN.name -> "血氧"
         Metric.STEPS.name -> "步數"
+        Metric.TEMPERATURE.name -> "體溫"
+        Metric.BATTERY.name -> "電池"
         BLOOD_PRESSURE -> "血壓"
         else -> "睡眠"
     }
@@ -67,6 +69,8 @@ private fun MetricDetail(metric: Metric, label: String, viewModel: DashboardView
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (metric == Metric.STEPS) {
                 StepsSection(readings, viewModel.rangeStart(range.days), range.days)
+            } else if (metric == Metric.TEMPERATURE) {
+                TemperatureSection(readings, viewModel.rangeStart(range.days), range.days)
             } else if (readings.isEmpty()) {
                 Text("這段期間沒有資料")
             } else {

@@ -30,27 +30,36 @@ private val DAY_HOUR = DateTimeFormatter.ofPattern("M/d HH:mm")
 
 /**
  * Reading 的折線圖。橫軸固定為 [startMillis] 起的 [days] 天，標籤精確到分鐘，
- * 縱軸依資料的最大最小值留白，不從 0 開始。
+ * 縱軸依資料的最大最小值留白，不從 0 開始。[valueScale] 是資料庫整數相對於顯示值的倍率，
+ * 例如體溫以 0.1 °C 存成整數，傳 10 讓圖表以 °C 顯示。
  */
 @Composable
-fun TrendChart(readings: List<ReadingEntity>, startMillis: Long, days: Int, modifier: Modifier = Modifier, second: List<ReadingEntity> = emptyList()) {
+fun TrendChart(
+    readings: List<ReadingEntity>,
+    startMillis: Long,
+    days: Int,
+    modifier: Modifier = Modifier,
+    second: List<ReadingEntity> = emptyList(),
+    valueScale: Int = 1,
+) {
     val producer = remember { CartesianChartModelProducer() }
     LaunchedEffect(readings, second) {
         // Vico 的 x 值最多容許四位小數，取整數分鐘
         fun xs(list: List<ReadingEntity>) = list.map { ((it.measuredAtMillis - startMillis) / 60_000).toDouble() }
         producer.runTransaction {
             lineSeries {
-                series(xs(readings), readings.map { it.value })
+                series(xs(readings), readings.map { it.value.toDouble() / valueScale })
                 // 第二條線（例如舒張壓）；空的序列 Vico 不接受，所以有資料才加
-                if (second.isNotEmpty()) series(xs(second), second.map { it.value })
+                if (second.isNotEmpty()) series(xs(second), second.map { it.value.toDouble() / valueScale })
             }
         }
     }
     val zone = ZoneId.systemDefault()
     val formatter = if (days == 1) HOUR_MINUTE else DAY_HOUR
     val all = readings + second
-    val minY = (all.minOf { it.value } - 5).toDouble()
-    val maxY = (all.maxOf { it.value } + 5).toDouble()
+    val margin = if (valueScale == 1) 5.0 else 0.5
+    val minY = all.minOf { it.value }.toDouble() / valueScale - margin
+    val maxY = all.maxOf { it.value }.toDouble() / valueScale + margin
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(

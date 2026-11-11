@@ -6,8 +6,13 @@ import java.time.Instant
  * 血壓以收縮壓與舒張壓兩個 Metric 各存一筆，時間點相同。戒指的血壓是估算值：
  * 收縮壓與心率的相關係數約 0.95，不是獨立量測，不可當成醫療數據。
  *
- * [STEPS] 是半小時區間內的步數，不是瞬間值：同一天的所有 Reading 加總才是當日步數 */
-enum class Metric { HEART_RATE, BLOOD_OXYGEN, STEPS, BLOOD_PRESSURE_SYSTOLIC, BLOOD_PRESSURE_DIASTOLIC }
+ * [STEPS] 是半小時區間內的步數，不是瞬間值：同一天的所有 Reading 加總才是當日步數。
+ *
+ * [TEMPERATURE] 以 0.1 °C 為單位存成整數（368 = 36.8 °C），來自 `0518` 的疑似體溫欄位，
+ * 是從數值範圍推論的，尚未用體溫計對照。
+ * [BATTERY] 是戒指電量百分比，時間點為 Sync 開始的時間（戒指的電量回應不帶時間戳記），
+ * 來自 `0200` 回應的推測欄位，尚未用 FixFate 畫面對照 */
+enum class Metric { HEART_RATE, BLOOD_OXYGEN, STEPS, BLOOD_PRESSURE_SYSTOLIC, BLOOD_PRESSURE_DIASTOLIC, TEMPERATURE, BATTERY }
 
 /** 某個 Metric 在某個時間點的一筆數值 */
 data class Reading(val metric: Metric, val measuredAt: Instant, val value: Int)

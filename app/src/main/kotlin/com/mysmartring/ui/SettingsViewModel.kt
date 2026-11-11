@@ -49,6 +49,8 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
         val steps = db.readingDao().all(Metric.STEPS.name)
         val systolic = db.readingDao().all(Metric.BLOOD_PRESSURE_SYSTOLIC.name)
         val diastolic = db.readingDao().all(Metric.BLOOD_PRESSURE_DIASTOLIC.name)
+        val temperature = db.readingDao().all(Metric.TEMPERATURE.name)
+        val battery = db.readingDao().all(Metric.BATTERY.name)
         val sleeps = db.sleepDao().sessions().map { SleepExport(it, db.sleepDao().segments(it.id)) }
         val stamp = LocalDate.now(zone).toString().replace("-", "")
         val files = mapOf(
@@ -57,8 +59,11 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
             // 步數的「數值」是該半小時區間的步數，時間點為區間起點
             "steps_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.readingsCsv(steps, zone)),
             "blood_pressure_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.bloodPressureCsv(systolic, diastolic, zone)),
+            // 體溫的「數值」以 0.1 °C 為單位（368 = 36.8 °C）；電池為百分比，時間點是 Sync 開始時間
+            "temperature_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.readingsCsv(temperature, zone)),
+            "battery_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.readingsCsv(battery, zone)),
             "sleep_$stamp.csv" to ("text/csv" to Exporter.BOM + Exporter.sleepCsv(sleeps, zone)),
-            "mysmartring_$stamp.json" to ("application/json" to Exporter.json(heart + oxygen + steps + systolic + diastolic, sleeps, zone)),
+            "mysmartring_$stamp.json" to ("application/json" to Exporter.json(heart + oxygen + steps + systolic + diastolic + temperature + battery, sleeps, zone)),
         )
         val resolver = app.contentResolver
         val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
